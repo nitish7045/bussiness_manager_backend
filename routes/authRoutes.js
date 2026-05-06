@@ -695,7 +695,7 @@ router.post("/register", async (req, res) => {
     });
   }
 });
-// LOGIN route - DEBUG VERSION
+// LOGIN route - FIXED FAST VERSION
 router.post("/login", async (req, res) => {
 
   try {
@@ -707,11 +707,7 @@ router.post("/login", async (req, res) => {
     console.log("📧 Email:", email);
 
     // ================= ACCOUNT LOCK CHECK =================
-    console.log("🔍 Checking account lock...");
-
     const attemptData = loginAttempts.get(email);
-
-    console.log("Attempt Data:", attemptData);
 
     if (
       attemptData &&
@@ -734,7 +730,7 @@ router.post("/login", async (req, res) => {
     console.log("✅ Account not locked");
 
     // ================= FIND USER =================
-    console.log("🔍 Finding user in database...");
+    console.log("🔍 Finding user...");
 
     const user = await User.findOne({ email });
 
@@ -744,17 +740,22 @@ router.post("/login", async (req, res) => {
 
       console.log("❌ User not found");
 
-      const newAttempts = updateLoginAttempts(email, false);
+      const newAttempts = updateLoginAttempts(
+        email,
+        false
+      );
 
-      console.log("Updated Attempts:", newAttempts);
-
-      await sendWrongPasswordAlert(
+      // SEND EMAIL WITHOUT AWAIT
+      sendWrongPasswordAlert(
         email,
         newAttempts.count,
         req
+      ).catch(err =>
+        console.log(
+          "Wrong password email failed:",
+          err.message
+        )
       );
-
-      console.log("📧 Wrong password email sent");
 
       return res.status(400).json({
         msg: "Invalid email or password",
@@ -762,7 +763,7 @@ router.post("/login", async (req, res) => {
 
     }
 
-    console.log("✅ User Found");
+    console.log("✅ User found");
 
     // ================= PASSWORD CHECK =================
     console.log("🔍 Comparing password...");
@@ -776,34 +777,41 @@ router.post("/login", async (req, res) => {
 
     if (!isMatch) {
 
-      console.log("❌ Password Incorrect");
+      console.log("❌ Password incorrect");
 
-      const newAttempts = updateLoginAttempts(email, false);
-
-      console.log("Updated Attempts:", newAttempts);
+      const newAttempts = updateLoginAttempts(
+        email,
+        false
+      );
 
       const remainingAttempts =
         5 - newAttempts.count;
 
-      await sendWrongPasswordAlert(
+      // SEND EMAIL WITHOUT AWAIT
+      sendWrongPasswordAlert(
         email,
         newAttempts.count,
         req
+      ).catch(err =>
+        console.log(
+          "Wrong password alert failed:",
+          err.message
+        )
       );
-
-      console.log("📧 Wrong password alert sent");
 
       if (newAttempts.count >= 5) {
 
-        console.log("❌ Too many attempts");
-
-        await sendExcessiveAttemptsAlert(
+        // SEND EMAIL WITHOUT AWAIT
+        sendExcessiveAttemptsAlert(
           email,
           newAttempts.count,
           req
+        ).catch(err =>
+          console.log(
+            "Excessive attempt email failed:",
+            err.message
+          )
         );
-
-        console.log("📧 Excessive attempt email sent");
 
         return res.status(403).json({
           msg:
@@ -818,40 +826,14 @@ router.post("/login", async (req, res) => {
 
     }
 
-    console.log("✅ Password Correct");
+    console.log("✅ Password correct");
 
-    // ================= RESET LOGIN ATTEMPTS =================
-    console.log("🔄 Resetting login attempts...");
-
+    // ================= RESET ATTEMPTS =================
     updateLoginAttempts(email, true);
 
-    console.log("✅ Login attempts reset");
-
-    // ================= LOCATION CHECK =================
-    console.log("🌍 Checking location...");
-
-    const newLocationDetected =
-      isNewLocation(user, req);
-
-    console.log(
-      "New Location Detected:",
-      newLocationDetected
-    );
-
-    // ================= SEND LOGIN EMAIL =================
-    console.log("📧 Sending login notification email...");
-
-    await sendLoginNotification(
-      email,
-      req,
-      newLocationDetected
-    );
-
-    console.log("✅ Login notification email sent");
+    console.log("✅ Attempts reset");
 
     // ================= GET IP =================
-    console.log("🌐 Getting IP...");
-
     let ip =
       req.headers["x-forwarded-for"] ||
       req.connection.remoteAddress ||
@@ -862,14 +844,13 @@ router.post("/login", async (req, res) => {
       ip = ip.substring(7);
     }
 
-    console.log("IP Address:", ip);
+    console.log("🌐 IP:", ip);
 
-    // ================= GET LOCATION =================
-    console.log("🌍 Getting location from IP...");
-
-    const location = await getLocationFromIP(req);
-
-    console.log("Location:", location);
+    // ================= FAST LOCATION =================
+    const location = {
+      city: "Unknown",
+      country: "Unknown",
+    };
 
     // ================= SAVE LOGIN HISTORY =================
     console.log("💾 Saving login history...");
@@ -895,10 +876,27 @@ router.post("/login", async (req, res) => {
 
     await user.save();
 
-    console.log("✅ User history saved");
+    console.log("✅ User saved");
+
+    // ================= SEND LOGIN EMAIL IN BACKGROUND =================
+    console.log("📧 Sending login email in background...");
+
+    const newLocationDetected =
+      isNewLocation(user, req);
+
+    sendLoginNotification(
+      email,
+      req,
+      newLocationDetected
+    ).catch(err =>
+      console.log(
+        "Login notification failed:",
+        err.message
+      )
+    );
 
     // ================= GENERATE TOKEN =================
-    console.log("🔑 Generating JWT token...");
+    console.log("🔑 Generating token...");
 
     const token = jwt.sign(
       {
@@ -911,11 +909,9 @@ router.post("/login", async (req, res) => {
       }
     );
 
-    console.log("✅ Token Generated");
+    console.log("✅ Token generated");
 
-    // ================= SEND RESPONSE =================
-    console.log("🚀 Sending success response...");
-
+    // ================= RESPONSE =================
     res.json({
       token,
       user: {
@@ -933,11 +929,7 @@ router.post("/login", async (req, res) => {
 
     console.log("========== LOGIN ERROR ==========");
 
-    console.error("❌ Full Error:", err);
-
-    console.error("❌ Error Message:", err.message);
-
-    console.error("❌ Stack:", err.stack);
+    console.error("❌ Error:", err);
 
     res.status(500).json({
       msg: "Server error",
