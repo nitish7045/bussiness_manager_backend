@@ -1,0 +1,36 @@
+{
+  "name": "business-manager-backend",
+  "version": "1.0.0",
+  "description": "Backend for business management app (attendance, salary, employees)",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "node",
+    "express",
+    "mongodb",
+    "business-management"
+  ],
+  "author": "Nitish",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.9.0",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.2.0",
+    "mongoose": "^8.23.1",
+    "multer": "^2.1.1",
+    "node-cache": "^5.1.2",
+    "nodemailer": "^8.0.7",
+    "otp-generator": "^4.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
