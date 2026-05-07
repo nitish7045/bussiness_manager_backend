@@ -695,324 +695,249 @@ router.post("/register", async (req, res) => {
     });
   }
 });
-// // LOGIN route - FIXED FAST VERSION
-// router.post("/login", async (req, res) => {
+// LOGIN route - FIXED FAST VERSION
+router.post("/login", async (req, res) => {
 
-//   try {
+  try {
 
-//     console.log("========== LOGIN START ==========");
+    console.log("========== LOGIN START ==========");
 
-//     const { email, password } = req.body;
+    const { email, password } = req.body;
 
-//     console.log("📧 Email:", email);
+    console.log("📧 Email:", email);
 
-//     // ================= ACCOUNT LOCK CHECK =================
-//     const attemptData = loginAttempts.get(email);
+    // ================= ACCOUNT LOCK CHECK =================
+    const attemptData = loginAttempts.get(email);
 
-//     if (
-//       attemptData &&
-//       attemptData.lockUntil &&
-//       attemptData.lockUntil > Date.now()
-//     ) {
+    if (
+      attemptData &&
+      attemptData.lockUntil &&
+      attemptData.lockUntil > Date.now()
+    ) {
 
-//       console.log("❌ Account Locked");
+      console.log("❌ Account Locked");
 
-//       const minutesLeft = Math.ceil(
-//         (attemptData.lockUntil - Date.now()) / 60000
-//       );
+      const minutesLeft = Math.ceil(
+        (attemptData.lockUntil - Date.now()) / 60000
+      );
 
-//       return res.status(403).json({
-//         msg: `Account locked. Try again after ${minutesLeft} minutes.`,
-//       });
+      return res.status(403).json({
+        msg: `Account locked. Try again after ${minutesLeft} minutes.`,
+      });
 
-//     }
+    }
 
-//     console.log("✅ Account not locked");
+    console.log("✅ Account not locked");
 
-//     // ================= FIND USER =================
-//     console.log("🔍 Finding user...");
+    // ================= FIND USER =================
+    console.log("🔍 Finding user...");
 
-//     const user = await User.findOne({ email });
+    const user = await User.findOne({ email });
 
-//     console.log("✅ User query completed");
+    console.log("✅ User query completed");
 
-//     if (!user) {
+    if (!user) {
 
-//       console.log("❌ User not found");
+      console.log("❌ User not found");
 
-//       const newAttempts = updateLoginAttempts(
-//         email,
-//         false
-//       );
+      const newAttempts = updateLoginAttempts(
+        email,
+        false
+      );
 
-//       // SEND EMAIL WITHOUT AWAIT
-//       sendWrongPasswordAlert(
-//         email,
-//         newAttempts.count,
-//         req
-//       ).catch(err =>
-//         console.log(
-//           "Wrong password email failed:",
-//           err.message
-//         )
-//       );
+      // SEND EMAIL WITHOUT AWAIT
+      sendWrongPasswordAlert(
+        email,
+        newAttempts.count,
+        req
+      ).catch(err =>
+        console.log(
+          "Wrong password email failed:",
+          err.message
+        )
+      );
 
-//       return res.status(400).json({
-//         msg: "Invalid email or password",
-//       });
+      return res.status(400).json({
+        msg: "Invalid email or password",
+      });
 
-//     }
+    }
 
-//     console.log("✅ User found");
+    console.log("✅ User found");
 
-//     // ================= PASSWORD CHECK =================
-//     console.log("🔍 Comparing password...");
+    // ================= PASSWORD CHECK =================
+    console.log("🔍 Comparing password...");
 
-//     const isMatch = await bcrypt.compare(
-//       password,
-//       user.password
-//     );
+    const isMatch = await bcrypt.compare(
+      password,
+      user.password
+    );
 
-//     console.log("✅ Password compare completed");
+    console.log("✅ Password compare completed");
 
-//     if (!isMatch) {
+    if (!isMatch) {
 
-//       console.log("❌ Password incorrect");
+      console.log("❌ Password incorrect");
 
-//       const newAttempts = updateLoginAttempts(
-//         email,
-//         false
-//       );
+      const newAttempts = updateLoginAttempts(
+        email,
+        false
+      );
 
-//       const remainingAttempts =
-//         5 - newAttempts.count;
+      const remainingAttempts =
+        5 - newAttempts.count;
 
-//       // SEND EMAIL WITHOUT AWAIT
-//       sendWrongPasswordAlert(
-//         email,
-//         newAttempts.count,
-//         req
-//       ).catch(err =>
-//         console.log(
-//           "Wrong password alert failed:",
-//           err.message
-//         )
-//       );
+      // SEND EMAIL WITHOUT AWAIT
+      sendWrongPasswordAlert(
+        email,
+        newAttempts.count,
+        req
+      ).catch(err =>
+        console.log(
+          "Wrong password alert failed:",
+          err.message
+        )
+      );
 
-//       if (newAttempts.count >= 5) {
+      if (newAttempts.count >= 5) {
 
-//         // SEND EMAIL WITHOUT AWAIT
-//         sendExcessiveAttemptsAlert(
-//           email,
-//           newAttempts.count,
-//           req
-//         ).catch(err =>
-//           console.log(
-//             "Excessive attempt email failed:",
-//             err.message
-//           )
-//         );
-
-//         return res.status(403).json({
-//           msg:
-//             "Too many failed attempts. Account locked for 15 minutes.",
-//         });
-
-//       }
-
-//       return res.status(400).json({
-//         msg: `Invalid password. ${remainingAttempts} attempts remaining.`,
-//       });
-
-//     }
-
-//     console.log("✅ Password correct");
-
-//     // ================= RESET ATTEMPTS =================
-//     updateLoginAttempts(email, true);
-
-//     console.log("✅ Attempts reset");
-
-//     // ================= GET IP =================
-//     let ip =
-//       req.headers["x-forwarded-for"] ||
-//       req.connection.remoteAddress ||
-//       req.socket.remoteAddress ||
-//       req.ip;
+        // SEND EMAIL WITHOUT AWAIT
+        sendExcessiveAttemptsAlert(
+          email,
+          newAttempts.count,
+          req
+        ).catch(err =>
+          console.log(
+            "Excessive attempt email failed:",
+            err.message
+          )
+        );
 
-//     if (ip && ip.startsWith("::ffff:")) {
-//       ip = ip.substring(7);
-//     }
+        return res.status(403).json({
+          msg:
+            "Too many failed attempts. Account locked for 15 minutes.",
+        });
 
-//     console.log("🌐 IP:", ip);
+      }
 
-//     // ================= FAST LOCATION =================
-//     const location = {
-//       city: "Unknown",
-//       country: "Unknown",
-//     };
+      return res.status(400).json({
+        msg: `Invalid password. ${remainingAttempts} attempts remaining.`,
+      });
 
-//     // ================= SAVE LOGIN HISTORY =================
-//     console.log("💾 Saving login history...");
-
-//     user.lastLogin = new Date();
-
-//     user.loginHistory =
-//       user.loginHistory || [];
-
-//     user.loginHistory.unshift({
-//       timestamp: new Date(),
-//       ip: ip,
-//       userAgent: req.headers["user-agent"],
-//       location: `${location.city}, ${location.country}`,
-//     });
-
-//     if (user.loginHistory.length > 50) {
-
-//       user.loginHistory =
-//         user.loginHistory.slice(0, 50);
-
-//     }
-
-//     await user.save();
-
-//     console.log("✅ User saved");
-
-//     // ================= SEND LOGIN EMAIL IN BACKGROUND =================
-//     console.log("📧 Sending login email in background...");
-
-//     const newLocationDetected =
-//       isNewLocation(user, req);
-
-//     sendLoginNotification(
-//       email,
-//       req,
-//       newLocationDetected
-//     ).catch(err =>
-//       console.log(
-//         "Login notification failed:",
-//         err.message
-//       )
-//     );
-
-//     // ================= GENERATE TOKEN =================
-//     console.log("🔑 Generating token...");
-
-//     const token = jwt.sign(
-//       {
-//         id: user._id,
-//         companyId: user.companyId,
-//       },
-//       JWT_SECRET,
-//       {
-//         expiresIn: "7d",
-//       }
-//     );
-
-//     console.log("✅ Token generated");
-
-//     // ================= RESPONSE =================
-//     res.json({
-//       token,
-//       user: {
-//         id: user._id,
-//         name: user.name,
-//         email: user.email,
-//         companyId: user.companyId,
-//       },
-//       msg: "Login successful",
-//     });
-
-//     console.log("========== LOGIN SUCCESS ==========");
-
-//   } catch (err) {
-
-//     console.log("========== LOGIN ERROR ==========");
-
-//     console.error("❌ Error:", err);
-
-//     res.status(500).json({
-//       msg: "Server error",
-//       error: err.message,
-//     });
-
-//   }
-
-// });
-
-// queue.js - Create a separate queue file
-const Queue = require('bull');
-
-// Create queues
-const emailQueue = new Queue('email notifications', 'redis://127.0.0.1:6379');
-const historyQueue = new Queue('login history', 'redis://127.0.0.1:6379');
-
-// Process email queue
-emailQueue.process(async (job) => {
-  const { type, email, req, newLocation } = job.data;
-  
-  switch(type) {
-    case 'login_notification':
-      await sendLoginNotification(email, req, newLocation);
-      break;
-    case 'wrong_password':
-      await sendWrongPasswordAlert(email, job.data.attemptCount, req);
-      break;
-    case 'excessive_attempts':
-      await sendExcessiveAttemptsAlert(email, job.data.attemptCount, req);
-      break;
-  }
-});
-
-// Process history queue
-historyQueue.process(async (job) => {
-  const { userId, ip, userAgent } = job.data;
-  const user = await User.findById(userId);
-  
-  if (user) {
-    const location = await getLocationFromIP({ ip });
+    }
+
+    console.log("✅ Password correct");
+
+    // ================= RESET ATTEMPTS =================
+    updateLoginAttempts(email, true);
+
+    console.log("✅ Attempts reset");
+
+    // ================= GET IP =================
+    let ip =
+      req.headers["x-forwarded-for"] ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress ||
+      req.ip;
+
+    if (ip && ip.startsWith("::ffff:")) {
+      ip = ip.substring(7);
+    }
+
+    console.log("🌐 IP:", ip);
+
+    // ================= FAST LOCATION =================
+    const location = {
+      city: "Unknown",
+      country: "Unknown",
+    };
+
+    // ================= SAVE LOGIN HISTORY =================
+    console.log("💾 Saving login history...");
+
+    user.lastLogin = new Date();
+
+    user.loginHistory =
+      user.loginHistory || [];
+
     user.loginHistory.unshift({
       timestamp: new Date(),
       ip: ip,
-      userAgent: userAgent,
+      userAgent: req.headers["user-agent"],
       location: `${location.city}, ${location.country}`,
     });
-    
-    if (user.loginHistory.length > 50) {
-      user.loginHistory = user.loginHistory.slice(0, 50);
-    }
-    
-    await user.save();
-  }
-});
 
-// Then in your login route:
-router.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    
-    // ... authentication logic ...
-    
-    // Send response immediately
-    res.json({ success: true, token });
-    
-    // Add jobs to queues (these are very fast)
-    emailQueue.add({
-      type: 'login_notification',
-      email: email,
-      req: req,
-      newLocation: isNewLocation(user, req)
+    if (user.loginHistory.length > 50) {
+
+      user.loginHistory =
+        user.loginHistory.slice(0, 50);
+
+    }
+
+    await user.save();
+
+    console.log("✅ User saved");
+
+    // ================= SEND LOGIN EMAIL IN BACKGROUND =================
+    console.log("📧 Sending login email in background...");
+
+    const newLocationDetected =
+      isNewLocation(user, req);
+
+    sendLoginNotification(
+      email,
+      req,
+      newLocationDetected
+    ).catch(err =>
+      console.log(
+        "Login notification failed:",
+        err.message
+      )
+    );
+
+    // ================= GENERATE TOKEN =================
+    console.log("🔑 Generating token...");
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        companyId: user.companyId,
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    console.log("✅ Token generated");
+
+    // ================= RESPONSE =================
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        companyId: user.companyId,
+      },
+      msg: "Login successful",
     });
-    
-    historyQueue.add({
-      userId: user._id,
-      ip: req.ip,
-      userAgent: req.headers['user-agent']
-    });
-    
+
+    console.log("========== LOGIN SUCCESS ==========");
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+
+    console.log("========== LOGIN ERROR ==========");
+
+    console.error("❌ Error:", err);
+
+    res.status(500).json({
+      msg: "Server error",
+      error: err.message,
+    });
+
   }
+
 });
 // Get current user
 router.get("/me", async (req, res) => {
